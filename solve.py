@@ -31,16 +31,49 @@ def heat_conductivity(t):
         return k2
 
 
-x_nodes = 100
-t_nodes = 100
-solve = []
+x_nodes = 50
+t_nodes = 50
+solve = [0 for i in range(t_nodes)]
 x_max = 1
 _time = 1
+left = 0
+right = 20
+dt = _time/t_nodes
+dx = x_max/x_nodes
 
-y0 = []
-for i in range(0, x_nodes):
-    y0.append(0)
+for i in range(t_nodes):
+    solve[i] = [0 for j in range(t_nodes)]
 
-solve.append(y0)
+for i in range(x_nodes):
+    solve[0][i] = 0
 
-for i in range()
+solve[0][0] = 0
+solve[0][x_nodes-1] = 20
+
+
+for i in range(1, t_nodes-1):
+    alpha = [0 for k in range(50)]
+    betta = [0 for k in range(50)]
+    alpha[1] = 0
+    betta[1] = left
+    for j in range(2, x_nodes-1):
+        y1 = (solve[i-1][j]+solve[i-1][j-1])/2
+        y2 = (solve[i-1][j]+solve[i-1][j+1])/2
+        a = (-dt*heat_conductivity(y1))/(dx*dx*heat_capacity(solve[i-1][j]))
+        b = (-dt*heat_conductivity(y2))/(dx*dx*heat_capacity(solve[i-1][j]))
+        c = (1+(dt*heat_conductivity(y1))/(dx*dx*heat_capacity(solve[i-1][j]))+(dt*heat_conductivity(y2))/(dx*dx*heat_capacity(solve[i-1][j])))
+        alpha[j] = -b/(a*alpha[j-1]+c)
+        betta[j] = (solve[i-1][j]-a*betta[j-1])/a*alpha[j-1]+c
+    solve[i][x_nodes-1] = right
+
+    for j in range(x_nodes-2, 1, -1):
+        solve[i][j] = alpha[j+1]*solve[i][j+1]+betta[j+1]
+
+
+fig = plt.figure()
+def animate(n):
+    line = plt.plot(solve[n], color='g')
+    return line
+
+a = ani.FuncAnimation(fig, animate, frames=len(solve), interval=100, blit=True, repeat=True)
+plt.show()
