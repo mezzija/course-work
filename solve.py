@@ -64,7 +64,7 @@ for i in range(1, t_nodes-1):
         b = -(dt*heat_conductivity(y1)/(heat_capacity(solve[i-1][j-1])*dx*dx))
         c = (1+(dt*heat_conductivity(y2)/(heat_capacity(solve[i-1][j-1])*dx*dx))+(dt*heat_conductivity(y1)/(heat_capacity(solve[i-1][j-1])*dx*dx)))
         alpha[j] = -(b/(a*alpha[j-1]+c))
-        betta[j] = (solve[i-1][j]-a*betta[j-1])/(a*alpha[j-1]+c)
+        betta[j] = (solve[i-1][j-1]-a*betta[j-1])/(a*alpha[j-1]+c)
 
     solve[i][x_nodes-1] = right
     for j in range(x_nodes-2, 0, -1):
