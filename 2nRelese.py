@@ -4,14 +4,14 @@ import matplotlib.animation as ani
 
 
 
-t0=10
-c1=2
-c2=20
-d=0.01
-L = 100
+t0 = 0
+c1 = 2
+c2 = 1.25
+d = 0.15
+L = 1
 c0 = L/(2*d)+(c1+c2)/2
-k1=1
-k2=5
+k1 = 0.5
+k2 = 0.75
 
 def heat_capacity(t):
     if t <= t0-d:
@@ -125,7 +125,7 @@ for i in range(1, t_nodes):
     solve.append(layer_matrix)
 
 
-print(solve[5])
-plt.imshow(solve[5])
+print(solve[50])
+plt.imshow(solve[50])
 plt.colorbar()
 plt.show()
