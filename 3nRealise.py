@@ -44,11 +44,11 @@ def heat_conductivity(t):
 
 
 # количество узлов по времени
-t_nodes = 10
+t_nodes = 100
 # количество пространственных узлов
-x_nodes = 100
-y_nodes = 100
-z_nodes = 100
+x_nodes = 10
+y_nodes = 10
+z_nodes = 10
 # максимальная длинна длинна по координатам
 y_max = 4
 x_max = 4
@@ -113,6 +113,12 @@ for x in range(x_nodes):
 
 solve.append(initial_conditions)
 
+exact_solution = np.zeros(shape=(t_nodes, x_nodes, y_nodes, z_nodes), dtype=float)
+for t in range(t_nodes):
+    for x in range(x_nodes):
+        for y in range(y_nodes):
+            for z in range(z_nodes):
+                exact_solution[t, x, y, z] = U(t*dt, x * dx, y * dy, z * dz)
 
 start_time = time.time()
 for t in range(1, t_nodes):
@@ -124,7 +130,7 @@ for t in range(1, t_nodes):
             alpha = [0] * x_nodes
             betta = [0] * x_nodes
             alpha[1] = 0
-            betta[1] = U(t, 0, y * dy, z * dz)
+            betta[1] = U(t*dt, 0, y * dy, z * dz)
             for x in range(2, x_nodes):
                 y1 = (solve[t - 1][x - 1][y][z] + solve[t - 1][x - 2][y][z]) / 2
                 y2 = (solve[t - 1][x - 1][y][z] + solve[t - 1][x][y][z]) / 2
@@ -133,8 +139,9 @@ for t in range(1, t_nodes):
                 c = (1 + (dt * heat_conductivity(y2) / (heat_capacity(solve[t - 1][x - 1][y][z]) * dx * dx)) + (
                         dt * heat_conductivity(y1) / (heat_capacity(solve[t - 1][x - 1][y][z]) * dx * dx)))
                 alpha[x] = -(b / (a * alpha[x - 1] + c))
-                betta[x] = (solve[t - 1][x - 1][y][z] - a * betta[x - 1]) / (a * alpha[x - 1] + c)
-            interval_matrix_X[x_nodes - 1][y][z] = U(t, x_max, y * dy, z * dz)
+                betta[x] = ((solve[t - 1][x - 1][y][z] + f(t*dt, x * dx, y * dy, z * dz)/3) - a * betta[x - 1]) / (
+                        a * alpha[x - 1] + c)
+            interval_matrix_X[x_nodes - 1][y][z] = U(t*dt, x_max, y * dy, z * dz)
             for x in range(x_nodes - 2, -1, -1):
                 interval_matrix_X[x][y][z] = alpha[x + 1] * interval_matrix_X[x + 1][y][z] + betta[x + 1]
     for x in range(x_nodes):
@@ -142,7 +149,7 @@ for t in range(1, t_nodes):
             alpha = [0 for a in range(y_nodes)]
             betta = [0 for b in range(y_nodes)]
             alpha[1] = 0
-            betta[1] = U(t, x * dx, 0, z * dz)
+            betta[1] = U(t*dt, x * dx, 0, z * dz)
             for y in range(2, y_nodes):
                 y1 = (interval_matrix_X[x][y - 1][z] + interval_matrix_X[x][y - 2][z]) / 2
                 y2 = (interval_matrix_X[x][y - 1][z] + interval_matrix_X[x][y][z]) / 2
@@ -151,8 +158,9 @@ for t in range(1, t_nodes):
                 c = (1 + (dt * heat_conductivity(y2) / (heat_capacity(interval_matrix_X[x][y - 1][z]) * dx * dx)) + (
                         dt * heat_conductivity(y1) / (heat_capacity(interval_matrix_X[x][y - 1][z]) * dx * dx)))
                 alpha[y] = -(b / (a * alpha[y - 1] + c))
-                betta[y] = (interval_matrix_X[x][y - 1][z] - a * betta[y - 1]) / (a * alpha[y - 1] + c)
-            interval_matrix_Y[x][y_nodes - 1][z] = U(t, x * dx, y_max, z * dz)
+                betta[y] = ((interval_matrix_X[x][y - 1][z] + f(t*dt, x * dx, y * dy, z * dz)/3) - a * betta[y - 1]) / (
+                        a * alpha[y - 1] + c)
+            interval_matrix_Y[x][y_nodes - 1][z] = U(t*dt, x * dx, y_max, z * dz)
             for y in range(y_nodes - 2, -1, -1):
                 interval_matrix_Y[x][y][z] = alpha[y + 1] * interval_matrix_Y[x][y + 1][z] + betta[y + 1]
     for x in range(x_nodes):
@@ -160,7 +168,7 @@ for t in range(1, t_nodes):
             alpha = [0 for a in range(z_nodes)]
             betta = [0 for b in range(z_nodes)]
             alpha[1] = 0
-            betta[1] = U(t, x * dx, y * dy, 0)
+            betta[1] = U(t*dt, x * dx, y * dy, 0)
             for z in range(2, z_nodes):
                 y1 = (interval_matrix_Y[x][y][z - 1] + interval_matrix_Y[x][y][z - 2]) / 2
                 y2 = (interval_matrix_Y[x][y][z - 1] + interval_matrix_Y[x][y][z]) / 2
@@ -169,15 +177,48 @@ for t in range(1, t_nodes):
                 c = (1 + (dt * heat_conductivity(y2) / (heat_capacity(interval_matrix_Y[x][y][z - 1]) * dx * dx)) + (
                         dt * heat_conductivity(y1) / (heat_capacity(interval_matrix_Y[x][y][z - 1]) * dx * dx)))
                 alpha[z] = -(b / (a * alpha[z - 1] + c))
-                betta[z] = (interval_matrix_Y[x][y][z - 1] - a * betta[z - 1]) / (a * alpha[z - 1] + c)
-            layer_matrix[x][y][z_nodes - 1] = U(t, x * dx, y * dy, z_max)
+                betta[z] = ((interval_matrix_Y[x][y][z - 1] + f(t*dt, x * dx, y * dy, z * dz)/3) - a * betta[z - 1]) / (
+                        a * alpha[z - 1] + c)
+            layer_matrix[x][y][z_nodes - 1] = U(t*dt, x * dx, y * dy, z_max)
             for z in range(z_nodes - 2, -1, -1):
                 layer_matrix[x][y][z] = alpha[z + 1] * interval_matrix_Y[x][y][z + 1] + betta[z + 1]
+    for x in range(x_nodes):
+        for y in range(y_nodes):
+            for z in range(z_nodes):
+
+
     solve.append(layer_matrix)
 
+inconsistency = np.zeros(shape=(t_nodes, x_nodes, y_nodes, z_nodes), dtype=float)
+for t in range(t_nodes):
+    for x in range(x_nodes):
+        for y in range(y_nodes):
+            for z in range(z_nodes):
+                if solve[t][x][y][z] ==0:
+                    print(t)
+                    print(x)
+                    print(y)
+                    print(z)
+                    print('next')
+                inconsistency[t, x, y, z] = solve[t][x][y][z] - exact_solution[t][x][y][z]
 
-plt.imshow(solve[1][5])
+
+with open('C:\\Users\mezzi\Desktop\курсач 2.0\course-work\curs.txt', "w+") as file:
+    file.write(str(solve))
+
+
+
+
+plt.imshow(inconsistency[5][5])
+plt.colorbar()
+plt.show()
+
+plt.imshow(exact_solution[5][5])
+plt.colorbar()
+plt.show()
+
+
+plt.imshow(solve[5][5])
 plt.colorbar()
 print("--- %s seconds ---" % (time.time() - start_time))
 plt.show()
-
